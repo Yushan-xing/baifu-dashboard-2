@@ -106,6 +106,10 @@ select:focus{border-color:var(--blue)}
 .chip{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:4px 11px;
   font-size:11px;color:var(--tx2)}
 .chip b{color:var(--blue);font-weight:600}
+.chip .ctag{display:inline-flex;align-items:center;gap:2px;margin-left:2px;padding:1px 8px;
+  border-radius:12px;background:rgba(46,124,246,.12);color:var(--blue);cursor:pointer;font-weight:600}
+.chip .ctag:hover{background:rgba(46,124,246,.24)}
+.chip .ctag b{color:var(--blue)}
 .scope .right{margin-left:auto;font-size:11px;color:var(--tx3)}
 .scope .right b{color:var(--tx2);font-weight:600}
 /* 居中平台快筛 */
@@ -715,6 +719,8 @@ const S = {t:'', ms:'', ph:'', plat:'', city:'', ccity:'', metric:'asd', prov:''
 /* 地图筛选栏独立状态：仅作用于经营地图板块，不影响整页 */
 const MS = {t:'', ms:'', ph:'', plat:'', city:'', ccity:''};
 const $ = id => document.getElementById(id);
+/* 城市名归一化：GeoJSON 带「市/地区/自治州」后缀，底表 ccity 多为简称，比较时必须去掉后缀 */
+const NCITY = s => String(s||'').replace(/市$|地区$|自治州$|盟$|林区$/,'');
 const fmt = (n,d=0) => (n||0).toLocaleString('zh-CN',{minimumFractionDigits:d,maximumFractionDigits:d});
 const wan = n => (n/10000);
 /* 抖音 = 黑色实心（浅色主题近黑 / 深色主题亮白），小红书保持红色 */
@@ -1353,7 +1359,7 @@ $('csvBtn').onclick = () => {
 function filtered(){
   return P.rows.filter(r=>
     (!S.t||r.t===S.t) && (!S.ms||r.ms===S.ms) && (!S.ph||r.ph===S.ph) &&
-    (!S.plat||r.plat===S.plat) && (!S.city||r.city===S.city) && (!S.ccity||r.ccity===S.ccity) &&
+    (!S.plat||r.plat===S.plat) && (!S.city||r.city===S.city) && (!S.ccity||NCITY(r.ccity)===NCITY(S.ccity)) &&
     (!S.prov||r.prov===S.prov) &&
     (!S.qsc.length||S.qsc.includes(String(r.sc))) &&
     (!S.qsn.length||S.qsn.some(t=>String(r.sn).toLowerCase().includes(t))) &&
@@ -1523,7 +1529,7 @@ function focusYunCities(yun){
 }
 function renderMap(rs0){
   const rs = rs0.filter(r=>(!MS.t||r.t===MS.t)&&(!MS.ms||r.ms===MS.ms)&&(!MS.ph||r.ph===MS.ph)&&
-    (!MS.plat||r.plat===MS.plat)&&(!MS.city||r.city===MS.city)&&(!MS.ccity||r.ccity===MS.ccity));
+    (!MS.plat||r.plat===MS.plat)&&(!MS.city||r.city===MS.city)&&(!MS.ccity||NCITY(r.ccity)===NCITY(MS.ccity)));
   if(DR){                                   /* 省级钻取视图（数据已内嵌，同步可用） */
     const g=GEO[DR.ad] || (P.provGeo||{})[DR.ad];
     if(g){ GEO[DR.ad]=g; renderProv(rs,g); return; }
@@ -1586,7 +1592,8 @@ function drillTo(name){
       /* 无该省边界数据时的温和提示（不显示为加载失败错误） */
       $('mapLegend').innerHTML='<span style="color:var(--tx3)">'+name+' 暂无市级地图明细，已返回全国视图</span>'; });
 }
-$('mapBack').onclick = ()=>{ DR=null; $('mapBack').style.display='none'; Z.k=1; Z.x=0; Z.y=0; render(); };
+$('mapBack').onclick = ()=>{ DR=null; S.ccity=''; MS.ccity='';   /* 返回全国时清除城市筛选，避免残留幽灵筛选 */
+  $('mapBack').style.display='none'; Z.k=1; Z.x=0; Z.y=0; render(); };
 function renderProv(rs,gj){
   const norm=s=>String(s||'').replace(/市$|地区$|自治州$|盟$|林区$/,'');
   /* 省内各城市名（来自 GeoJSON），按客户所在城市归集，不限运中归属 */
@@ -1642,7 +1649,7 @@ function renderProv(rs,gj){
   const label={asd:'短直数',ag:'GMV',akz:'客资',exp:'曝光',tk:'售券数'}[metric];
   $('mapLegend').innerHTML='<span><b style="color:var(--tx2)">'+DR.name+'</b> · 指标 '+label+'</span>'+
     '<span><i style="background:#dce4ef"></i>无数据</span>'+
-    (S.city?'<span style="color:var(--blue);font-weight:600">已选城市：'+S.city+'（再次点击取消）</span>':'')+
+    (S.ccity?'<span style="color:var(--blue);font-weight:600">已选城市：'+NCITY(S.ccity)+'（再次点击取消）</span>':'')+
     '<span style="margin-left:auto">覆盖城市 <b>'+Object.keys(agg).length+'</b> · 点击城市筛选整页</span>';
 }
 
@@ -1876,12 +1883,28 @@ function storeAgg(rs){
 })();
 /* 总渲染 */
 function render(){
-  const rs=filtered();
+  /* 兜底①：城市筛选若归一化后匹配不到任何账号（历史脏值/GeoJSON 全名残留），自动清除，
+     避免「看着全是默认、却整页 0」的幽灵筛选 */
+  if(S.ccity && !P.rows.some(r=>NCITY(r.ccity)===NCITY(S.ccity))) S.ccity='';
+  if(MS.ccity && !P.rows.some(r=>NCITY(r.ccity)===NCITY(MS.ccity))) MS.ccity='';
+  let rs=filtered();
+  /* 兜底②：整页 0 行且没有任何可见筛选时，说明是隐藏的批量搜索残留 → 自动清理，
+     保证永远不会出现「全是默认却一个都不亮、且无从下手」 */
+  const noVisible = !S.t&&!S.ms&&!S.ph&&!S.plat&&!S.city&&!S.ccity&&!S.prov;
+  if(!rs.length && noVisible &&
+     (S.qsc.length||S.qsn.length||S.quid.length||S.qaid.length||S.qnick.length)){
+    ['qsc','qsn','quid','qaid','qnick'].forEach(k=>S[k]=[]);
+    rs=filtered();
+  }
   const cur=S.t||S.ms||S.ph||S.plat||S.city||S.prov;
   const nMerchant=new Set(rs.map(r=>r.ms)).size;
   const nStore=new Set(rs.map(r=>r.code+'|'+r.sc)).size;
+  /* 城市筛选可见化：范围条里显示可点击的「城市 ✕」标签，随时能取消 */
+  const cityTag = S.ccity
+    ? ' · <span class="ctag" id="ctagClr" title="点击清除城市筛选">城市：<b>'+NCITY(S.ccity)+'</b> ✕</span>' : '';
   $('scopeChips').innerHTML= (cur?'<b>'+cur+'</b>':'全部门店')+
-    ' · <b>'+nMerchant+'</b> 大商 · <b>'+nStore+'</b> 门店';
+    ' · <b>'+nMerchant+'</b> 大商 · <b>'+nStore+'</b> 门店'+cityTag;
+  const _ct=$('ctagClr'); if(_ct) _ct.onclick=()=>{ S.ccity=''; MS.ccity=''; render(); };
   $('scopeRows').innerHTML='账号 <b>'+rs.length+'</b> 个';
   updatePlatChips();
   renderKPI(rs); renderWarn(rs); renderMap(rs); renderDonut(rs);
