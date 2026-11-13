@@ -112,17 +112,12 @@ select:focus{border-color:var(--blue)}
 .chip .ctag b{color:var(--blue)}
 .scope .right{margin-left:auto;font-size:11px;color:var(--tx3)}
 .scope .right b{color:var(--tx2);font-weight:600}
-/* 居中平台快筛 */
-.platchips{display:flex;align-items:center;justify-content:center;gap:9px;margin:2px 0 13px}
-.warncard .ch .platchips{margin:0;justify-content:flex-end;flex-wrap:wrap}
-.warncard .ch .pchip{padding:4px 10px;font-size:10.5px}
-.platchips .lb{font-size:11px;color:var(--tx3)}
-.pchip{display:inline-flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);
-  border-radius:18px;padding:5px 15px;font-size:11.5px;color:var(--tx2);cursor:pointer;transition:.15s}
-.pchip:hover{border-color:var(--blue);color:var(--blue)}
-.pchip.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
-.pchip .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
-.pchip.on .dot{border:1px solid rgba(255,255,255,.65)}
+/* 预警商户：抖音/小红书两组固定展示 */
+.wgrp{margin-top:12px}
+.wgrp:first-of-type{margin-top:2px}
+.wgt{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--tx);margin:0 0 3px}
+.wgt em{font-style:normal;font-weight:500;font-size:9.5px;color:var(--tx3);margin-left:auto}
+.wgt .dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:none}
 /* KPI */
 .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-bottom:17px}
 .kpi{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:17px 17px 14px;
@@ -256,6 +251,11 @@ body.dark #map path.has{stroke:#16202f}
   font-size:11.5px;color:var(--tx2);border-radius:5px}
 .msmulti label:hover{background:var(--blue-l)}
 .msmulti label input{margin:0;accent-color:var(--blue);cursor:pointer}
+/* 商户达成速览：滚动时卡片标题/筛选栏/表头固定 */
+#viewMs .card .ch{position:sticky;top:0;z-index:6;background:var(--panel);margin-bottom:0;padding-bottom:8px}
+#viewMs #msTool{position:sticky;z-index:5;background:var(--panel);margin:0 0 10px;padding:0 0 9px}
+#viewMs #msHd{position:sticky;z-index:4;border-radius:7px 7px 0 0;
+  box-shadow:0 1px 0 var(--line)}
 .mstbl{width:100%;border-collapse:collapse}
 .mstbl th{position:sticky;top:0;z-index:2;background:var(--panel2);color:var(--tx2);font-size:12px;font-weight:600;
   text-align:right;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -556,17 +556,17 @@ body.dark #map path.has{stroke:#16202f}
       <!-- 右列：预警商户 → 平台分布 → 批次贡献路径 -->
       <div class="rcol">
         <div class="card warncard">
-          <div class="ch"><div><h2>预警商户<span class="qm" data-tip="<b>预警口径</b><br>按<b>大商简称</b>聚合，取短直达成率、GMV达成率、客资达成率<b>三项均低于当月时间进度</b>的商户。<br>时间进度 = 数据截止日 ÷ 当月天数。">?</span></h2>
-            <div class="desc">按大商简称 · 三项达成率均低于时间进度</div></div>
-          <div class="platchips" id="platchips">
-            <button class="pchip on" data-p="">全部</button>
-            <button class="pchip" data-p="抖音"><i class="dot" style="background:var(--dy)"></i>抖音</button>
-            <button class="pchip" data-p="小红书"><i class="dot" style="background:#f2544b"></i>小红书</button>
-          </div></div>
+          <div class="ch"><div><h2>预警商户<span class="qm" data-tip="<b>预警口径</b><br>按<b>大商简称</b>聚合，取短直达成率、GMV达成率、客资达成率<b>三项均低于当月时间进度</b>的商户；抖音、小红书分别按<b>三项平均达成率</b>升序各取前 5 家。<br>时间进度 = 数据截止日 ÷ 当月天数。">?</span></h2>
+            <div class="desc">按大商简称 · 三项达成率均低于时间进度 · 平均达成率最低前 5</div></div></div>
           <div class="whead"><b id="warnCnt">—</b><span>家商户预警</span><span class="prog" id="warnProg">—</span></div>
-          <table class="wtable"><thead><tr><th>大商简称</th><th class="num">短直达成率</th>
-            <th class="num">GMV达成率</th><th class="num">客资达成率</th></tr></thead>
-            <tbody id="warnBody"></tbody></table>
+          <div class="wgrp"><div class="wgt"><i class="dot" style="background:var(--dy)"></i>抖音<em id="wgDy">—</em></div>
+            <table class="wtable"><thead><tr><th>大商简称</th><th class="num">短直达成率</th>
+              <th class="num">GMV达成率</th><th class="num">客资达成率</th></tr></thead>
+              <tbody id="warnBodyDy"></tbody></table></div>
+          <div class="wgrp"><div class="wgt"><i class="dot" style="background:#f2544b"></i>小红书<em id="wgXhs">—</em></div>
+            <table class="wtable"><thead><tr><th>大商简称</th><th class="num">短直达成率</th>
+              <th class="num">GMV达成率</th><th class="num">客资达成率</th></tr></thead>
+              <tbody id="warnBodyXhs"></tbody></table></div>
           <div class="wmore" id="warnMore"></div>
         </div>
         <div class="card">
@@ -628,7 +628,7 @@ body.dark #map path.has{stroke:#16202f}
           <span>平台</span><span class="msmulti" id="mm_plat"></span>
           <span class="cnt" id="msCnt"></span>
         </div>
-        <div style="overflow:auto">
+        <div style="overflow:visible">
           <div class="wk-hd" id="msHd">
             <div>商户</div>
             <div>短直<span class="sbtn" data-k="sd" data-dir="asc" title="按短直完成率升序">↑</span><span class="sbtn" data-k="sd" data-dir="desc" title="按短直完成率降序">↓</span></div>
@@ -763,25 +763,11 @@ $('qClear').onclick = () => {
   render();
 };
 
-/* 居中平台快筛：与左侧 / 地图筛选联动 */
-document.querySelectorAll('#platchips .pchip').forEach(b=>{
-  b.onclick = () => {
-    S.wplat = b.dataset.p;           /* 仅控制预警商户，不影响整页筛选 */
-    updatePlatChips();
-    renderWarn(filtered());
-  };
-});
-function updatePlatChips(){
-  document.querySelectorAll('#platchips .pchip').forEach(b=>
-    b.classList.toggle('on', b.dataset.p===(S.wplat||'')));
-}
-
 $('resetBtn').onclick = () => {
-  Object.assign(S,{t:'',ms:'',ph:'',plat:'',city:'',ccity:'',prov:'',wplat:''});
+  Object.assign(S,{t:'',ms:'',ph:'',plat:'',city:'',ccity:'',prov:''});
   Object.assign(MS,{t:'',ms:'',ph:'',plat:'',city:'',ccity:''});
   ['f_t','m_t','f_ms','m_ms','f_ph','m_ph','f_plat','m_plat','f_city','m_city','q_ms'].forEach(i=>$(i).value='');
   ['sc','sn','uid','aid','nick'].forEach(clearBatch);
-  updatePlatChips();
   if(!DR){ Z.k=1; Z.x=0; Z.y=0; }   /* 复位时回到全图 */
   render();
 };
@@ -809,10 +795,17 @@ document.querySelectorAll('#nav a').forEach(a=>a.onclick=()=>{
   $('viewPh').style.display = v==='分批次数据表现'?'':'none';
   $('viewChannel').style.display = v==='渠道视图'?'':'none';
   if(v==='月度经营数据') renderMonth();
-  if(v==='商户数据表现') renderMs();
+  if(v==='商户数据表现'){ renderMs(); fixMsSticky(); }
   if(v==='分批次数据表现') renderPh();
   if(v==='渠道视图') renderChannel();
 });
+/* 商户达成速览滚动固定：筛选栏吸附在卡片标题下、表头再吸附在筛选栏下 */
+function fixMsSticky(){
+  const ch=document.querySelector('#viewMs .card .ch'), tool=$('msTool'), hd=$('msHd');
+  if(!ch||!tool||!hd) return;
+  tool.style.top=ch.offsetHeight+'px';
+  hd.style.top=(ch.offsetHeight+tool.offsetHeight)+'px';
+}
 /* 月度经营数据状态（模块级，跨渲染保留） */
 const MM = {teacher:'', ph:'', ms:'', sel:[8,9,10,11], dsort:{k:null,dir:'desc'}, cur:null};
 
@@ -1461,7 +1454,7 @@ function renderMsKpi(){
   $('kpisMs').innerHTML = kpiCards(msList()).map(kpiCardNew).join('');
 }
 
-/* 预警商户：按大商简称聚合，三项达成率均低于时间进度 */
+/* 预警商户：按大商简称聚合，三项达成率均低于时间进度；抖音/小红书各按平均达成率升序固定取前 5 */
 function merchantAgg(rs){
   const m={};
   rs.forEach(r=>{
@@ -1474,16 +1467,20 @@ function merchantAgg(rs){
     .sort((a,b)=>(a.sd+a.gmv+a.kz)-(b.sd+b.gmv+b.kz));
 }
 function renderWarn(rs){
-  if(S.wplat) rs = rs.filter(r=>r.plat===S.wplat);   /* 平台快筛仅作用于预警商户 */
-  const list=merchantAgg(rs), show=list.slice(0,8);
-  $('warnCnt').textContent=list.length;
-  $('warnProg').textContent='时间进度 '+fmt(PROG,1)+'% · 共 '+new Set(rs.map(r=>r.ms)).size+' 家商户';
   const cell=v=>'<td class="num '+(v<15?'low':v<PROG?'mid':'')+'">'+fmt(v,1)+'%</td>';
-  $('warnBody').innerHTML = show.length?show.map(g=>
-    '<tr><td title="'+g.n+'">'+g.n+'</td>'+cell(g.sd)+cell(g.gmv)+cell(g.kz)+'</tr>').join('')
-    :'<tr><td colspan="4" style="text-align:center;color:var(--tx3);padding:12px">当前筛选无预警商户</td></tr>';
-  $('warnMore').textContent= list.length>show.length?
-    '按三项达成率合计升序 · 仅展示前 '+show.length+' 家，共 '+list.length+' 家':'按三项达成率合计升序';
+  const grp=(plat,bodyId)=>{
+    const list=merchantAgg(rs.filter(r=>r.plat===plat)).slice(0,5);
+    $(bodyId).innerHTML = list.length?list.map(g=>
+      '<tr><td title="'+g.n+'">'+g.n+'</td>'+cell(g.sd)+cell(g.gmv)+cell(g.kz)+'</tr>').join('')
+      :'<tr><td colspan="4" style="text-align:center;color:var(--tx3);padding:12px">无预警商户</td></tr>';
+    return list.length;
+  };
+  const nDy=grp('抖音','warnBodyDy'), nXhs=grp('小红书','warnBodyXhs');
+  $('wgDy').textContent='共 '+nDy+' 家';
+  $('wgXhs').textContent='共 '+nXhs+' 家';
+  $('warnCnt').textContent=nDy+nXhs;
+  $('warnProg').textContent='时间进度 '+fmt(PROG,1)+'% · 抖音 '+nDy+' · 小红书 '+nXhs;
+  $('warnMore').textContent='按三项平均达成率升序 · 每平台各展示前 5 家';
 }
 
 /* 省份聚合 + 地图 */
@@ -1906,7 +1903,6 @@ function render(){
     ' · <b>'+nMerchant+'</b> 大商 · <b>'+nStore+'</b> 门店'+cityTag;
   const _ct=$('ctagClr'); if(_ct) _ct.onclick=()=>{ S.ccity=''; MS.ccity=''; render(); };
   $('scopeRows').innerHTML='账号 <b>'+rs.length+'</b> 个';
-  updatePlatChips();
   renderKPI(rs); renderWarn(rs); renderMap(rs); renderDonut(rs);
 }
 render();
