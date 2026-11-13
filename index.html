@@ -196,17 +196,18 @@ body.dark #map path.has{stroke:#16202f}
 .donuts3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:4px 0 6px}
 .dcell{min-width:0;border-right:1px dashed var(--line2);display:flex;flex-direction:column;align-items:center}
 .dcell:last-child{border-right:0}
-.dcell .dh{font-size:10.5px;color:var(--tx2);font-weight:600;margin-bottom:6px;white-space:nowrap}
-.donut{position:relative;width:96px;height:96px;margin:0 auto}
+.dcell .dh{font-size:10.5px;color:var(--tx2);font-weight:600;margin-bottom:8px;white-space:nowrap}
+/* 重新排版：每格上下结构（圆环完整居中 + 图例在下方），避免窄列里横排被挤压 */
+.donut{position:relative;width:88px;height:88px;flex:none;margin:0 auto}
+.donut svg{display:block;width:88px;height:88px}
 .donut .ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
-.donut .ctr b{font-size:16px;line-height:1.05;color:var(--blue)}
+.donut .ctr b{font-size:15px;line-height:1.05;color:var(--blue);font-weight:700}
 .donut .ctr span{font-size:8.5px;color:var(--tx3);margin-top:2px}
-/* 图例靠圆环右侧 · 垂直居中 */
-.drow{display:flex;align-items:center;justify-content:center;gap:16px;width:100%}
-.dlg{position:relative;font-size:9px;line-height:1.65;text-align:left;
-  display:flex;flex-direction:column;align-items:flex-start;pointer-events:auto}
+.drow{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:8px;width:100%}
+.dlg{position:relative;font-size:9px;line-height:1.7;text-align:left;
+  display:flex;flex-direction:column;align-items:flex-start;pointer-events:auto;align-self:center}
 .dlg div{white-space:nowrap;color:var(--tx2)}
-.dlg i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:3px;vertical-align:0;
+.dlg i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px;vertical-align:0;
   border:1px solid rgba(120,135,160,.45)}
 .dlg b{font-weight:600;color:var(--blue);margin-left:3px}
 .dlg em{font-style:normal;font-weight:600;color:#7c6cf2;margin-left:1px}
