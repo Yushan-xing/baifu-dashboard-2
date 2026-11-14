@@ -112,12 +112,27 @@ select:focus{border-color:var(--blue)}
 .chip .ctag b{color:var(--blue)}
 .scope .right{margin-left:auto;font-size:11px;color:var(--tx3)}
 .scope .right b{color:var(--tx2);font-weight:600}
-/* 预警商户：抖音/小红书两组固定展示 */
+/* 预警商户：分平台全量 + 卡片尺寸固定 + 内部滚动 */
 .wgrp{margin-top:12px}
 .wgrp:first-of-type{margin-top:2px}
 .wgt{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--tx);margin:0 0 3px}
 .wgt em{font-style:normal;font-weight:500;font-size:9.5px;color:var(--tx3);margin-left:auto}
 .wgt .dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:none}
+/* 右上角平台标签（可点选筛选，仅作用于本卡） */
+.wtabs{display:flex;align-items:center;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.wtab{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;padding:3px 9px;border-radius:14px;
+  border:1px solid var(--line);background:var(--panel);color:var(--tx3);cursor:pointer;white-space:nowrap;transition:.15s}
+.wtab:hover{border-color:var(--blue)}
+.wtab.on{background:var(--blue-l);border-color:var(--blue);color:var(--blue);font-weight:600}
+.wtab .dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:none}
+/* 固定高度的滚动区（右侧细滚动条，可见可滑） */
+.wscroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding-right:2px;
+  scrollbar-width:thin;scrollbar-color:var(--tx3) var(--panel2)}
+.wscroll::-webkit-scrollbar{width:8px}
+.wscroll::-webkit-scrollbar-track{background:var(--panel2);border-radius:4px}
+.wscroll::-webkit-scrollbar-thumb{background:var(--tx3);border-radius:4px;opacity:.75}
+.wscroll::-webkit-scrollbar-thumb:hover{background:var(--blue)}
+.wtable thead th{position:sticky;top:0;z-index:2;background:var(--panel)}
 /* KPI */
 .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-bottom:17px}
 .kpi{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:17px 17px 14px;
@@ -353,8 +368,11 @@ body.dark #map path.has{stroke:#16202f}
 .phchart .bname{text-align:center;font-size:11.5px;color:var(--tx2);margin-top:8px}
 .phchart .axis{border-bottom:1px solid var(--line2)}
 .card.hl-amber{border-left:3px solid var(--amber)}
-/* 预警商户卡（大商简称口径） */
-.warncard{border:1px solid rgba(245,166,35,.35)}
+/* 预警商户卡（大商简称口径）：长宽固定，仅列表区内部滚动 */
+.warncard{border:1px solid rgba(245,166,35,.35);height:422px;display:flex;flex-direction:column;overflow:hidden}
+.warncard>.ch{flex:0 0 auto}
+.warncard>.whead{flex:0 0 auto}
+.warncard>.wmore{flex:0 0 auto}
 .warncard .ch h2::before{background:var(--amber)}
 .whead{display:flex;align-items:baseline;gap:9px;margin-bottom:7px}
 .whead b{font-size:24px;color:var(--amber);line-height:1}
@@ -556,17 +574,23 @@ body.dark #map path.has{stroke:#16202f}
       <!-- 右列：预警商户 → 平台分布 → 批次贡献路径 -->
       <div class="rcol">
         <div class="card warncard">
-          <div class="ch"><div><h2>预警商户<span class="qm" data-tip="<b>预警口径</b><br>按<b>大商简称</b>聚合，取短直达成率、GMV达成率、客资达成率<b>三项均低于当月时间进度</b>的商户；抖音、小红书分别按<b>三项平均达成率</b>升序各取前 5 家。<br>时间进度 = 数据截止日 ÷ 当月天数。">?</span></h2>
-            <div class="desc">按大商简称 · 三项达成率均低于时间进度 · 平均达成率最低前 5</div></div></div>
+          <div class="ch"><div><h2>预警商户<span class="qm" data-tip="<b>预警口径</b><br>按<b>大商简称</b>聚合，取短直达成率、GMV达成率、客资达成率<b>三项均低于当月时间进度</b>的商户，全量展示；<b>分平台</b>按三项平均达成率升序，商户多时右侧可下滑。<br>时间进度 = 数据截止日 ÷ 当月天数。">?</span></h2>
+            <div class="desc">按大商简称 · 三项达成率均低于时间进度 · 分平台全量</div></div>
+            <div class="wtabs" id="wtabs">
+              <button class="wtab on" data-p="抖音"><i class="dot" style="background:var(--dy)"></i>抖音</button>
+              <button class="wtab on" data-p="小红书"><i class="dot" style="background:#f2544b"></i>小红书</button>
+            </div></div>
           <div class="whead"><b id="warnCnt">—</b><span>家商户预警</span><span class="prog" id="warnProg">—</span></div>
-          <div class="wgrp"><div class="wgt"><i class="dot" style="background:var(--dy)"></i>抖音<em id="wgDy">—</em></div>
+          <div class="wscroll" id="wScroll">
+          <div class="wgrp" data-grp="抖音"><div class="wgt"><i class="dot" style="background:var(--dy)"></i>抖音<em id="wgDy">—</em></div>
             <table class="wtable"><thead><tr><th>大商简称</th><th class="num">短直达成率</th>
               <th class="num">GMV达成率</th><th class="num">客资达成率</th></tr></thead>
               <tbody id="warnBodyDy"></tbody></table></div>
-          <div class="wgrp"><div class="wgt"><i class="dot" style="background:#f2544b"></i>小红书<em id="wgXhs">—</em></div>
+          <div class="wgrp" data-grp="小红书"><div class="wgt"><i class="dot" style="background:#f2544b"></i>小红书<em id="wgXhs">—</em></div>
             <table class="wtable"><thead><tr><th>大商简称</th><th class="num">短直达成率</th>
               <th class="num">GMV达成率</th><th class="num">客资达成率</th></tr></thead>
               <tbody id="warnBodyXhs"></tbody></table></div>
+          </div>
           <div class="wmore" id="warnMore"></div>
         </div>
         <div class="card">
@@ -1454,7 +1478,7 @@ function renderMsKpi(){
   $('kpisMs').innerHTML = kpiCards(msList()).map(kpiCardNew).join('');
 }
 
-/* 预警商户：按大商简称聚合，三项达成率均低于时间进度；抖音/小红书各按平均达成率升序固定取前 5 */
+/* 预警商户：按大商简称聚合，三项达成率均低于时间进度；分平台全量、按平均达成率升序 */
 function merchantAgg(rs){
   const m={};
   rs.forEach(r=>{
@@ -1469,7 +1493,7 @@ function merchantAgg(rs){
 function renderWarn(rs){
   const cell=v=>'<td class="num '+(v<15?'low':v<PROG?'mid':'')+'">'+fmt(v,1)+'%</td>';
   const grp=(plat,bodyId)=>{
-    const list=merchantAgg(rs.filter(r=>r.plat===plat)).slice(0,5);
+    const list=merchantAgg(rs.filter(r=>r.plat===plat));   /* 全量，不再截断前 5 */
     $(bodyId).innerHTML = list.length?list.map(g=>
       '<tr><td title="'+g.n+'">'+g.n+'</td>'+cell(g.sd)+cell(g.gmv)+cell(g.kz)+'</tr>').join('')
       :'<tr><td colspan="4" style="text-align:center;color:var(--tx3);padding:12px">无预警商户</td></tr>';
@@ -1480,8 +1504,20 @@ function renderWarn(rs){
   $('wgXhs').textContent='共 '+nXhs+' 家';
   $('warnCnt').textContent=nDy+nXhs;
   $('warnProg').textContent='时间进度 '+fmt(PROG,1)+'% · 抖音 '+nDy+' · 小红书 '+nXhs;
-  $('warnMore').textContent='按三项平均达成率升序 · 每平台各展示前 5 家';
+  $('warnMore').textContent='按三项平均达成率升序 · 分平台全量展示';
+  applyWPlat();
 }
+/* 右上角平台标签：多选切换显示哪些平台分组（仅作用于本卡，尺寸不变） */
+const WPLAT={抖音:true,小红书:true};
+function applyWPlat(){
+  document.querySelectorAll('#wtabs .wtab').forEach(b=>b.classList.toggle('on',!!WPLAT[b.dataset.p]));
+  document.querySelectorAll('#wScroll .wgrp').forEach(g=>{
+    g.style.display = WPLAT[g.dataset.grp] ? '' : 'none';
+  });
+}
+document.querySelectorAll('#wtabs .wtab').forEach(b=>{
+  b.onclick=()=>{ WPLAT[b.dataset.p]=!WPLAT[b.dataset.p]; applyWPlat(); };
+});
 
 /* 省份聚合 + 地图 */
 function provAgg(rs){
