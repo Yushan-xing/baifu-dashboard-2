@@ -1489,20 +1489,26 @@ function merchantAgg(rs){
     .filter(g=>g.sd<PROG && g.gmv<PROG && g.kz<PROG)
     .sort((a,b)=>(a.sd+a.gmv+a.kz)-(b.sd+b.gmv+b.kz));
 }
+/* 临时开关：小红书数据先清空、但保留平台标识（右上角标签 + 分组红点 icon）。
+   把 true 改 false 即恢复小红书全量数据，无需改其他代码。 */
+const WARN_XHS_EMPTY = true;
+
 function renderWarn(rs){
   const cell=v=>'<td class="num '+(v<15?'low':v<PROG?'mid':'')+'">'+fmt(v,1)+'%</td>';
-  const grp=(plat,bodyId)=>{
-    const list=merchantAgg(rs.filter(r=>r.plat===plat));   /* 全量，不再截断前 5 */
+  const grp=(plat,bodyId,empty)=>{
+    const list = empty ? [] : merchantAgg(rs.filter(r=>r.plat===plat));   /* 全量，不再截断前 5 */
     $(bodyId).innerHTML = list.length?list.map(g=>
       '<tr><td title="'+g.n+'">'+g.n+'</td>'+cell(g.sd)+cell(g.gmv)+cell(g.kz)+'</tr>').join('')
-      :'<tr><td colspan="4" style="text-align:center;color:var(--tx3);padding:12px">无预警商户</td></tr>';
+      :'<tr><td colspan="4" style="text-align:center;color:var(--tx3);padding:12px">'+
+        (empty?'暂无数据':'无预警商户')+'</td></tr>';
     return list.length;
   };
-  const nDy=grp('抖音','warnBodyDy'), nXhs=grp('小红书','warnBodyXhs');
+  const nDy=grp('抖音','warnBodyDy',false), nXhs=grp('小红书','warnBodyXhs',WARN_XHS_EMPTY);
   $('wgDy').textContent='共 '+nDy+' 家';
-  $('wgXhs').textContent='共 '+nXhs+' 家';
+  $('wgXhs').textContent=WARN_XHS_EMPTY?'—':'共 '+nXhs+' 家';
   $('warnCnt').textContent=nDy+nXhs;
-  $('warnProg').textContent='时间进度 '+fmt(PROG,1)+'% · 抖音 '+nDy+' · 小红书 '+nXhs;
+  $('warnProg').textContent='时间进度 '+fmt(PROG,1)+'% · 抖音 '+nDy+
+    (WARN_XHS_EMPTY?'':' · 小红书 '+nXhs);
   $('warnMore').textContent='按三项平均达成率升序 · 分平台全量展示';
   applyWPlat();
 }
