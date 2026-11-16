@@ -1244,19 +1244,20 @@ function backMsList(){
 }
 $('msBack').onclick=backMsList;
 /* 门店下钻：按门店编码 sc 合并同店多账号。
-   口径（用户 2026-11-16 定）：短直/客资按账号 → 目标与达成均相加；
-   GMV 按门店 → 目标同店去重只取一次、达成相加。
-   排版：门店名跨行合并、账号名一行一个；短直/客资每行重复显示合并值；
-   GMV 跨行合并只显示一个累计值（用户 2026-11-16 二次确认）。 */
+   口径（用户 2026-11-16 三次确认）：
+   - 短直/客资：按「账号」分别统计 → 每行显示该账号自己的目标/达成；合计行才按门店相加。
+   - GMV：按「门店」累计 → 目标同店去重只取一次、达成相加，跨行只显示一个值。
+   排版：门店名跨行合并、账号名一行一个、GMV 跨行合并，展示版式保持不变。 */
 function mergeByStore(det){
   const m=new Map();
   det.forEach(x=>{
     const key=x.sc||('__'+x.sn);
     let g=m.get(key);
-    if(!g){ g={sc:x.sc, sn:x.sn, nicks:[], sd:[0,0], gmv:[0,0], kz:[0,0], n:0}; m.set(key,g); }
-    g.nicks.push(x.nick); g.n++;
-    g.sd[0]+=x.sd[0]; g.sd[1]+=x.sd[1];       // 短直：账号级目标和达成都相加
-    g.kz[0]+=x.kz[0]; g.kz[1]+=x.kz[1];       // 客资：账号级目标和达成都相加
+    if(!g){ g={sc:x.sc, sn:x.sn, accts:[], sd:[0,0], gmv:[0,0], kz:[0,0], n:0}; m.set(key,g); }
+    g.accts.push({nick:x.nick, sd:x.sd, kz:x.kz});   // 每个账号自己的短直/客资原值
+    g.n++;
+    g.sd[0]+=x.sd[0]; g.sd[1]+=x.sd[1];       // 门店合计（合计行/排序用）
+    g.kz[0]+=x.kz[0]; g.kz[1]+=x.kz[1];
     g.gmv[0]+=x.gmv[0];                        // GMV 达成：相加
     if(g.n===1) g.gmv[1]=x.gmv[1];             // GMV 目标：门店级 → 同店只取一次（不重复累加）
   });
@@ -1285,7 +1286,8 @@ function renderMsDrill(){
       return MSDS.dir==='asc' ? pa-pb : pb-pa;
     }); }
   /* 每个账号一行；门店名跨行合并（rowspan）、GMV 跨行合并只显示一个累计值；
-     短直/客资每行重复显示该门店的合并值 */
+     短直/客资每行显示「该账号自己的」目标/达成（不是门店合计）。
+     合计行仍用门店合计 sd/kz、GMV 用门店累计。 */
   const row=(sn,nick,d,cls)=>'<tr'+(cls?' class="'+cls+'"':'')+'>'+
     '<td title="'+sn+'">'+sn+'</td><td style="color:var(--tx2)">'+(nick||'—')+'</td>'+
     '<td style="min-width:210px;padding:6px 8px">'+wkCell('sd', d.sd, true)+'</td>'+
@@ -1293,14 +1295,14 @@ function renderMsDrill(){
     '<td style="min-width:210px;padding:6px 8px">'+wkCell('kz', d.kz, true)+'</td></tr>';
   let html='';
   rows.forEach(g=>{
-    const nicks=(g.nicks&&g.nicks.length)?g.nicks:['—'];
-    nicks.forEach((nick,i)=>{
+    const accts=(g.accts&&g.accts.length)?g.accts:[{nick:'—',sd:[0,0],kz:[0,0]}];
+    accts.forEach((a,i)=>{
       html+='<tr'+(i===0?' class="store-first"':'')+'>'+
-        (i===0?'<td title="'+g.sn+'" rowspan="'+nicks.length+'" style="vertical-align:middle">'+g.sn+'</td>':'')+
-        '<td style="color:var(--tx2)">'+(nick||'—')+'</td>'+
-        '<td style="min-width:210px;padding:6px 8px">'+wkCell('sd',g.sd,true)+'</td>'+
-        (i===0?'<td rowspan="'+nicks.length+'" style="min-width:210px;padding:6px 8px;vertical-align:middle;background:var(--panel)">'+wkCell('gmv',g.gmv,true)+'</td>':'')+
-        '<td style="min-width:210px;padding:6px 8px">'+wkCell('kz',g.kz,true)+'</td></tr>';
+        (i===0?'<td title="'+g.sn+'" rowspan="'+accts.length+'" style="vertical-align:middle">'+g.sn+'</td>':'')+
+        '<td style="color:var(--tx2)">'+(a.nick||'—')+'</td>'+
+        '<td style="min-width:210px;padding:6px 8px">'+wkCell('sd',a.sd,true)+'</td>'+
+        (i===0?'<td rowspan="'+accts.length+'" style="min-width:210px;padding:6px 8px;vertical-align:middle;background:var(--panel)">'+wkCell('gmv',g.gmv,true)+'</td>':'')+
+        '<td style="min-width:210px;padding:6px 8px">'+wkCell('kz',a.kz,true)+'</td></tr>';
     });
   });
   $('msDBody').innerHTML = html + row('合计（'+st+'家门店）','',tot,'sumrow');
