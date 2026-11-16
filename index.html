@@ -1243,8 +1243,26 @@ function backMsList(){
   window.scrollTo(0,0);
 }
 $('msBack').onclick=backMsList;
+/* 门店下钻：按门店编码 sc 合并同店多账号。
+   口径（用户 2026-11-16 定）：短直/客资按账号 → 目标与达成均相加；
+   GMV 按门店 → 目标同店去重只取一次、达成相加。账号列合并显示该店全部账号名。 */
+function mergeByStore(det){
+  const m=new Map();
+  det.forEach(x=>{
+    const key=x.sc||('__'+x.sn);
+    let g=m.get(key);
+    if(!g){ g={sc:x.sc, sn:x.sn, nicks:[], sd:[0,0], gmv:[0,0], kz:[0,0], n:0}; m.set(key,g); }
+    g.nicks.push(x.nick); g.n++;
+    g.sd[0]+=x.sd[0]; g.sd[1]+=x.sd[1];       // 短直：账号级目标和达成都相加
+    g.kz[0]+=x.kz[0]; g.kz[1]+=x.kz[1];       // 客资：账号级目标和达成都相加
+    g.gmv[0]+=x.gmv[0];                        // GMV 达成：相加
+    if(g.n===1) g.gmv[1]=x.gmv[1];             // GMV 目标：门店级 → 同店只取一次（不重复累加）
+  });
+  return [...m.values()].map(g=>({...g,
+    sn:g.n>1 ? g.sn+'（'+g.n+'个账号）' : g.sn}));
+}
 function renderMsDrill(){
-  const det=MS_DRILL.det, st=MS_DRILL.st;
+  const det=mergeByStore(MS_DRILL.det), st=det.length;
   const hd=(k,label)=>'<th>'+label+
     '<span class="sbtn" data-k="'+k+'" data-dir="asc" title="按'+label+'完成率升序">↑</span>'+
     '<span class="sbtn" data-k="'+k+'" data-dir="desc" title="按'+label+'完成率降序">↓</span></th>';
@@ -1269,8 +1287,8 @@ function renderMsDrill(){
     '<td style="min-width:210px;padding:6px 8px">'+wkCell('sd', d.sd, true)+'</td>'+
     '<td style="min-width:210px;padding:6px 8px">'+wkCell('gmv',d.gmv,true)+'</td>'+
     '<td style="min-width:210px;padding:6px 8px">'+wkCell('kz', d.kz, true)+'</td></tr>';
-  $('msDBody').innerHTML = rows.map(x=>row(x.sn,x.nick,x)).join('')+
-    row('合计（'+st+'家门店 / '+det.length+'个账号）','',tot,'sumrow');
+  $('msDBody').innerHTML = rows.map(x=>row(x.sn,(x.nicks||[]).join(' / '),x)).join('')+
+    row('合计（'+st+'家门店）','',tot,'sumrow');
 }
 
 /* ================= 分批次数据表现 ================= */
