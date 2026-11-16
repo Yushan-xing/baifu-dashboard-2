@@ -1245,7 +1245,9 @@ function backMsList(){
 $('msBack').onclick=backMsList;
 /* 门店下钻：按门店编码 sc 合并同店多账号。
    口径（用户 2026-11-16 定）：短直/客资按账号 → 目标与达成均相加；
-   GMV 按门店 → 目标同店去重只取一次、达成相加。账号列合并显示该店全部账号名。 */
+   GMV 按门店 → 目标同店去重只取一次、达成相加。
+   排版：门店名跨行合并、账号名一行一个；短直/客资每行重复显示合并值；
+   GMV 跨行合并只显示一个累计值（用户 2026-11-16 二次确认）。 */
 function mergeByStore(det){
   const m=new Map();
   det.forEach(x=>{
@@ -1282,13 +1284,26 @@ function renderMsDrill(){
       const pa=msRate(a[k][1],a[k][0]), pb=msRate(b[k][1],b[k][0]);
       return MSDS.dir==='asc' ? pa-pb : pb-pa;
     }); }
+  /* 每个账号一行；门店名跨行合并（rowspan）、GMV 跨行合并只显示一个累计值；
+     短直/客资每行重复显示该门店的合并值 */
   const row=(sn,nick,d,cls)=>'<tr'+(cls?' class="'+cls+'"':'')+'>'+
     '<td title="'+sn+'">'+sn+'</td><td style="color:var(--tx2)">'+(nick||'—')+'</td>'+
     '<td style="min-width:210px;padding:6px 8px">'+wkCell('sd', d.sd, true)+'</td>'+
     '<td style="min-width:210px;padding:6px 8px">'+wkCell('gmv',d.gmv,true)+'</td>'+
     '<td style="min-width:210px;padding:6px 8px">'+wkCell('kz', d.kz, true)+'</td></tr>';
-  $('msDBody').innerHTML = rows.map(x=>row(x.sn,(x.nicks||[]).join(' / '),x)).join('')+
-    row('合计（'+st+'家门店）','',tot,'sumrow');
+  let html='';
+  rows.forEach(g=>{
+    const nicks=(g.nicks&&g.nicks.length)?g.nicks:['—'];
+    nicks.forEach((nick,i)=>{
+      html+='<tr'+(i===0?' class="store-first"':'')+'>'+
+        (i===0?'<td title="'+g.sn+'" rowspan="'+nicks.length+'" style="vertical-align:middle">'+g.sn+'</td>':'')+
+        '<td style="color:var(--tx2)">'+(nick||'—')+'</td>'+
+        '<td style="min-width:210px;padding:6px 8px">'+wkCell('sd',g.sd,true)+'</td>'+
+        (i===0?'<td rowspan="'+nicks.length+'" style="min-width:210px;padding:6px 8px;vertical-align:middle;background:var(--panel)">'+wkCell('gmv',g.gmv,true)+'</td>':'')+
+        '<td style="min-width:210px;padding:6px 8px">'+wkCell('kz',g.kz,true)+'</td></tr>';
+    });
+  });
+  $('msDBody').innerHTML = html + row('合计（'+st+'家门店）','',tot,'sumrow');
 }
 
 /* ================= 分批次数据表现 ================= */
