@@ -1316,7 +1316,7 @@ function renderMsDrill(){
     '<span class="sbtn" data-k="'+k+'" data-dir="asc" title="按'+label+'完成率升序">↑</span>'+
     '<span class="sbtn" data-k="'+k+'" data-dir="desc" title="按'+label+'完成率降序">↓</span></th>';
   $('msDHead').innerHTML='<tr><th style="min-width:190px">门店名称</th><th style="min-width:150px">账号名称</th>'+
-    hd('sd','短直')+hd('gmv','GMV（万）')+hd('kz','客资')+'</tr>';
+    hd('sd','短直')+hd('kz','客资')+hd('gmv','GMV（万）')+'</tr>';
   document.querySelectorAll('#msDHead .sbtn').forEach(b=>b.onclick=()=>{
     const k=b.dataset.k, dir=b.dataset.dir;
     MSDS = (MSDS.k===k&&MSDS.dir===dir) ? {k:null,dir:'asc'} : {k:k,dir:dir};
@@ -1331,14 +1331,15 @@ function renderMsDrill(){
       const pa=msRate(a[k][1],a[k][0]), pb=msRate(b[k][1],b[k][0]);
       return MSDS.dir==='asc' ? pa-pb : pb-pa;
     }); }
-  /* 每个账号一行；门店名跨行合并（rowspan）、GMV 跨行合并只显示一个累计值；
+  /* 每个账号一行；门店名跨行合并（rowspan）、GMV 跨行合并只显示一个累计值（末列）；
      短直/客资每行显示「该账号自己的」目标/达成（不是门店合计）。
+     列顺序（用户 2026-11-17 指定，仅下钻页）：门店 | 账号 | 短直 | 客资 | GMV。
      合计行仍用门店合计 sd/kz、GMV 用门店累计。 */
   const row=(sn,nick,d,cls)=>'<tr'+(cls?' class="'+cls+'"':'')+'>'+
     '<td title="'+sn+'">'+sn+'</td><td style="color:var(--tx2)">'+(nick||'—')+'</td>'+
     '<td style="min-width:210px;padding:6px 8px">'+wkCell('sd', d.sd, true)+'</td>'+
-    '<td style="min-width:210px;padding:6px 8px">'+wkCell('gmv',d.gmv,true)+'</td>'+
-    '<td style="min-width:210px;padding:6px 8px">'+wkCell('kz', d.kz, true)+'</td></tr>';
+    '<td style="min-width:210px;padding:6px 8px">'+wkCell('kz', d.kz, true)+'</td>'+
+    '<td style="min-width:210px;padding:6px 8px">'+wkCell('gmv',d.gmv,true)+'</td></tr>';
   let html='';
   rows.forEach(g=>{
     const accts=(g.accts&&g.accts.length)?g.accts:[{nick:'—',sd:[0,0],kz:[0,0]}];
@@ -1347,8 +1348,9 @@ function renderMsDrill(){
         (i===0?'<td title="'+g.sn+'" rowspan="'+accts.length+'" style="vertical-align:middle">'+g.sn+'</td>':'')+
         '<td style="color:var(--tx2)">'+(a.nick||'—')+'</td>'+
         '<td style="min-width:210px;padding:6px 8px">'+wkCell('sd',a.sd,true)+'</td>'+
+        '<td style="min-width:210px;padding:6px 8px">'+wkCell('kz',a.kz,true)+'</td>'+
         (i===0?'<td rowspan="'+accts.length+'" style="min-width:210px;padding:6px 8px;vertical-align:middle;background:var(--panel)">'+wkCell('gmv',g.gmv,true)+'</td>':'')+
-        '<td style="min-width:210px;padding:6px 8px">'+wkCell('kz',a.kz,true)+'</td></tr>';
+        '</tr>';
     });
   });
   $('msDBody').innerHTML = html + row('合计（'+st+'家门店）','',tot,'sumrow');
