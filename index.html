@@ -265,6 +265,14 @@ body.dark #map path.has{stroke:#16202f}
   font-size:11.5px;color:var(--tx2);border-radius:5px}
 .msmulti label:hover{background:var(--blue-l)}
 .msmulti label input{margin:0;accent-color:var(--blue);cursor:pointer}
+/* 可搜索多选（大商简称）：搜索框吸顶 + 过滤列表 */
+.msmulti .mssearch{position:sticky;top:-6px;z-index:2;background:var(--panel);
+  padding:2px 2px 6px;margin:-6px -2px 2px;border-bottom:1px solid var(--line2)}
+.msmulti .mssearch input{width:100%;box-sizing:border-box;padding:5px 9px;font-size:11.5px;
+  border:1px solid var(--line);border-radius:6px;background:var(--panel2);color:var(--tx);outline:none}
+.msmulti .mssearch input:focus{border-color:var(--blue)}
+.msmulti .mssearch input::placeholder{color:var(--tx3)}
+.msmulti .msempty{padding:10px 6px;font-size:11.5px;color:var(--tx3);text-align:center}
 /* 商户达成速览：滚动时卡片标题/筛选栏/表头固定 */
 #viewMs .card .ch{position:sticky;top:0;z-index:6;background:var(--panel);margin-bottom:0;padding-bottom:8px}
 #viewMs #msTool{position:sticky;z-index:5;background:var(--panel);margin:0 0 10px;padding:0 0 9px}
@@ -1097,7 +1105,7 @@ const msRateCol = p => p>1?'var(--blue)':(p>=0.7?'var(--green)':(p<0.3?'var(--re
 const barCol = p => p>=1 ? 'var(--green)' : (p>=0.5 ? 'var(--amber)' : 'var(--red)');
 const msAvg = m => (msRate(m.tsd,m.asd)+msRate(m.tg,m.ag)+msRate(m.tkz,m.akz))/3;
 /* ===== 通用多选下拉组件（商户达成速览：教师/批次/大商/平台，全部可多选） ===== */
-function initMulti(elId, key, label, options){
+function initMulti(elId, key, label, options, searchable){
   const wrap=$(elId);
   wrap.innerHTML='<button class="msbtn" type="button"></button><div class="mspanel"></div>';
   const btn=wrap.querySelector('.msbtn'), panel=wrap.querySelector('.mspanel');
@@ -1108,21 +1116,57 @@ function initMulti(elId, key, label, options){
     btn.classList.toggle('on', sel.length>0);
     panel.querySelectorAll('input[type=checkbox]').forEach(cb=>{ cb.checked = sel.indexOf(cb.value)>=0; });
   };
-  panel.innerHTML='<div class="msacts"><button data-a="all">全选</button><button data-a="none">清空</button></div>'+
-    options.map(o=>'<label><input type="checkbox" value="'+o+'">'+o+'</label>').join('');
+  const listHtml = options.map(o=>'<label data-v="'+o+'"><input type="checkbox" value="'+o+'">'+o+'</label>').join('');
+  panel.innerHTML = (searchable
+      ? '<div class="mssearch"><input type="text" placeholder="搜索'+label+'…" autocomplete="off"></div>'
+      : '') +
+    '<div class="msacts"><button data-a="all">全选</button><button data-a="none">清空</button></div>' +
+    '<div class="mslist">'+listHtml+'<div class="msempty" style="display:none">无匹配</div></div>';
+  /* 搜索过滤：只显隐 label，不重建 DOM（勾选状态与面板开合都不受影响） */
+  if(searchable){
+    const inp=panel.querySelector('.mssearch input');
+    const emptyTip=panel.querySelector('.msempty');
+    const applyFilter=()=>{
+      const q=inp.value.trim().toLowerCase();
+      let shown=0;
+      panel.querySelectorAll('.mslist label').forEach(l=>{
+        const hit = !q || l.dataset.v.toLowerCase().indexOf(q)>=0;
+        l.style.display = hit ? '' : 'none';
+        if(hit) shown++;
+      });
+      emptyTip.style.display = shown ? 'none' : '';
+    };
+    inp.oninput = applyFilter;
+    /* 点搜索框/输入时不触发“点外部关闭” */
+    inp.onclick = e=>e.stopPropagation();
+    inp.onkeydown = e=>{ if(e.key==='Escape'){ inp.value=''; applyFilter(); } };
+    panel._resetSearch = ()=>{ inp.value=''; applyFilter(); };
+  }
   panel.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.onchange=()=>{
     const v=cb.value, arr=MSS[key];
     if(cb.checked){ if(arr.indexOf(v)<0) arr.push(v); }
     else { const i=arr.indexOf(v); if(i>=0) arr.splice(i,1); }
     syncBtn(); renderMs();
   });
-  panel.querySelector('[data-a=all]').onclick=()=>{ MSS[key]=options.slice(); syncBtn(); renderMs(); };
-  panel.querySelector('[data-a=none]').onclick=()=>{ MSS[key]=[]; syncBtn(); renderMs(); };
+  /* 全选/清空只作用于「当前可见（搜索命中）」的项，搜索时更符合直觉；无搜索词即全部 */
+  const visibleVals=()=>[...panel.querySelectorAll('.mslist label')]
+    .filter(l=>l.style.display!=='none').map(l=>l.dataset.v);
+  panel.querySelector('[data-a=all]').onclick=()=>{
+    const vis=visibleVals();
+    vis.forEach(v=>{ if(MSS[key].indexOf(v)<0) MSS[key].push(v); });
+    syncBtn(); renderMs();
+  };
+  panel.querySelector('[data-a=none]').onclick=()=>{
+    const vis=visibleVals();
+    MSS[key]=MSS[key].filter(v=>vis.indexOf(v)<0);
+    syncBtn(); renderMs();
+  };
   btn.onclick=e=>{
     e.stopPropagation();
     const show=!panel.classList.contains('show');
     document.querySelectorAll('.msmulti .mspanel').forEach(p=>p.classList.remove('show'));
     panel.classList.toggle('show',show);
+    if(show && panel._resetSearch){ panel._resetSearch(); panel.querySelector('.mssearch input').focus(); }
   };
   panel.onclick=e=>e.stopPropagation();
   syncBtn();
@@ -1141,7 +1185,7 @@ $('msPeriod').textContent = P.period;
     .sort((a,b)=>a==='抖音'?-1:(b==='抖音'?1:0));   /* 抖音在前、小红书在后 */
   initMulti('mm_teacher','teacher','教师',ts);
   initMulti('mm_ph','ph','批次',phs);
-  initMulti('mm_ms','ms','大商',mses);
+  initMulti('mm_ms','ms','大商',mses,true);   /* 大商 26 个：带搜索框的可多选 */
   initMulti('mm_plat','plat','平台',plats);
 
   /* 列头 ↑↓ 排序（1.0 式）；再点已选中箭头 = 恢复默认短直降序 */
