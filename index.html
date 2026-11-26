@@ -1328,11 +1328,18 @@ function mergeByStore(det){
 }
 function renderMsDrill(){
   const det=mergeByStore(MS_DRILL.det), st=det.length;
+  /* 小红书平台：下钻页把「短直」显示为「笔记」（数据口径不变，仅列名/说明）。
+     商户均为纯平台（纯抖音或纯小红书），按明细账号平台判定。 */
+  const isXhs = (MS_DRILL.det||[]).some(x=>x.plat==='小红书');
+  const sdLabel = isXhs ? '笔记' : '短直';
   const hd=(k,label)=>'<th>'+label+
     '<span class="sbtn" data-k="'+k+'" data-dir="asc" title="按'+label+'完成率升序">↑</span>'+
     '<span class="sbtn" data-k="'+k+'" data-dir="desc" title="按'+label+'完成率降序">↓</span></th>';
   $('msDHead').innerHTML='<tr><th style="min-width:190px">门店名称</th><th style="min-width:150px">账号名称</th>'+
-    hd('sd','短直')+hd('kz','客资')+hd('gmv','GMV（万）')+'</tr>';
+    hd('sd',sdLabel)+hd('kz','客资')+hd('gmv','GMV（万）')+'</tr>';
+  /* 同步下钻页顶部说明文字的指标名 */
+  const desc=document.querySelector('#viewMsDrill .ch .desc');
+  if(desc) desc.textContent=sdLabel+' / GMV / 客资 · 进度 · 实际达成 · 目标 · 缺口 · 完成率';
   document.querySelectorAll('#msDHead .sbtn').forEach(b=>b.onclick=()=>{
     const k=b.dataset.k, dir=b.dataset.dir;
     MSDS = (MSDS.k===k&&MSDS.dir===dir) ? {k:null,dir:'asc'} : {k:k,dir:dir};
