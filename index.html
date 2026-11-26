@@ -315,6 +315,19 @@ body.dark #map path.has{stroke:#16202f}
   border-bottom:1px solid var(--line2);align-items:start}
 .wk-row:hover{background:var(--panel2)}
 .wk-row:last-child{border-bottom:none}
+/* 商户达成速览：横向滚动条 + 冻结首列（商户名）。
+   表格区作为独立滚动区（双向滚动）：表头在区内吸顶、首列左右冻结；
+   卡片标题 .ch 与筛选栏 #msTool 仍在页面层吸顶。 */
+.ms-xscroll{overflow:auto;max-height:calc(100vh - 220px);position:relative;border-radius:7px}
+.ms-xscroll .wk-hd,.ms-xscroll .wk-row{min-width:1160px}
+.ms-xscroll .wk-hd>div:first-child,.ms-xscroll .wk-row>div:first-child{
+  position:sticky;left:0;z-index:3;background:var(--panel);box-shadow:1px 0 0 var(--line2)}
+.ms-xscroll .wk-hd>div:first-child{z-index:5;background:var(--panel2)}
+.ms-xscroll .wk-row:hover>div:first-child{background:var(--panel2)}
+.ms-xscroll::-webkit-scrollbar{width:9px;height:9px}
+.ms-xscroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:5px}
+.ms-xscroll::-webkit-scrollbar-thumb:hover{background:var(--tx3)}
+.ms-xscroll::-webkit-scrollbar-track{background:transparent}
 .wk-mnm{color:var(--blue);font-weight:600;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
 .wk-mnm:hover{text-decoration:underline}
 .wk-minfo{font-size:11px;color:var(--tx3);margin-top:5px;line-height:1.5}
@@ -659,7 +672,7 @@ body.dark #map path.has{stroke:#16202f}
           <span>平台</span><span class="msmulti" id="mm_plat"></span>
           <span class="cnt" id="msCnt"></span>
         </div>
-        <div style="overflow:visible">
+        <div id="msTableScroll" class="ms-xscroll">
           <div class="wk-hd" id="msHd">
             <div>商户</div>
             <div>短直<span class="sbtn" data-k="sd" data-dir="asc" title="按短直完成率升序">↑</span><span class="sbtn" data-k="sd" data-dir="desc" title="按短直完成率降序">↓</span></div>
@@ -830,12 +843,15 @@ document.querySelectorAll('#nav a').forEach(a=>a.onclick=()=>{
   if(v==='分批次数据表现') renderPh();
   if(v==='渠道视图') renderChannel();
 });
-/* 商户达成速览滚动固定：筛选栏吸附在卡片标题下、表头再吸附在筛选栏下 */
+/* 商户达成速览滚动固定：
+   - 卡片标题 .ch、筛选栏 #msTool 吸附在页面层（top 依次叠加）；
+   - 表头 #msHd 现在位于独立横向滚动区 .ms-xscroll 内，只在区内吸顶(top:0)、
+     首列(商户名)用 sticky left 左右冻结。 */
 function fixMsSticky(){
   const ch=document.querySelector('#viewMs .card .ch'), tool=$('msTool'), hd=$('msHd');
   if(!ch||!tool||!hd) return;
   tool.style.top=ch.offsetHeight+'px';
-  hd.style.top=(ch.offsetHeight+tool.offsetHeight)+'px';
+  hd.style.top='0px';
 }
 /* 月度经营数据状态（模块级，跨渲染保留） */
 const MM = {teacher:'', ph:'', ms:'', sel:[8,9,10,11], dsort:{k:null,dir:'desc'}, cur:null};
